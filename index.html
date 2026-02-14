@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dear Data: Sleep, Strain, and Caloric Analysis | Gavin Zhu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --text-primary: #f0f0f5;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --accent-sleep: #7b68ee;
+            --accent-calories: #f4a261;
+            --accent-strain: #ef476f;
+            --accent-highlight: #06d6a0;
+            --border-subtle: rgba(255,255,255,0.08);
+            --gradient-sleep: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-calories: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-strain: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Source Sans 3', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-size: 17px;
+            font-weight: 300;
+        }
+
+        /* Noise texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+            z-index: 1000;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            padding: 4rem 2rem;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(123, 104, 238, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(239, 71, 111, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(244, 162, 97, 0.08) 0%, transparent 50%);
+            animation: heroGlow 15s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes heroGlow {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(2%, 1%) rotate(1deg); }
+            66% { transform: translate(-1%, 2%) rotate(-1deg); }
+        }
+
+        .hero-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 400;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+            animation: fadeInUp 0.8s ease-out 0.1s both;
+        }
+
+        .hero h1 em {
+            font-style: italic;
+            background: linear-gradient(135deg, var(--accent-sleep), var(--accent-strain));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero-meta {
+            display: flex;
+            gap: 2rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .hero-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        .scroll-indicator svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--text-muted);
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(10px); }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Theme Section */
+        .theme-section {
+            padding: 6rem 0;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-subtle);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .theme-card {
+            background: linear-gradient(135deg, rgba(123, 104, 238, 0.1) 0%, rgba(239, 71, 111, 0.05) 100%);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .theme-card::before {
+            content: '"';
+            font-family: 'Playfair Display', serif;
+            font-size: 15rem;
+            position: absolute;
+            top: -3rem;
+            left: 1rem;
+            color: rgba(123, 104, 238, 0.1);
+            line-height: 1;
+        }
+
+        .theme-card h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.75rem;
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .theme-card p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .theme-questions {
+            list-style: none;
+            margin-top: 2rem;
+            position: relative;
+        }
+
+        .theme-questions li {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .theme-questions li:last-child {
+            border-bottom: none;
+        }
+
+        .question-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--accent-highlight);
+            background: rgba(6, 214, 160, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .question-text {
+            color: var(--text-primary);
+            font-weight: 400;
+        }
+
+        /* Visualization Sections */
+        .visualization {
+            padding: 6rem 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .viz-header {
+            margin-bottom: 4rem;
+        }
+
+        .viz-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .viz-title {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-weight: 400;
+            margin-bottom: 1rem;
+        }
+
+        .viz-question {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            padding-left: 1.5rem;
+            border-left: 3px solid;
+        }
+
+        .viz-1 .viz-question { border-color: var(--accent-sleep); }
+        .viz-2 .viz-question { border-color: var(--accent-calories); }
+        .viz-3 .viz-question { border-color: var(--accent-strain); }
+
+        .section-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            margin-top: 3rem;
+        }
+
+        .section-label:first-of-type {
+            margin-top: 0;
+        }
+
+        h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.35rem;
+            font-weight: 400;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        p {
+            margin-bottom: 1.25rem;
+            color: var(--text-secondary);
+        }
+
+        strong {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Data Tables */
+        .data-table-wrapper {
+            overflow-x: auto;
+            margin: 2rem 0;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            text-align: left;
+            padding: 1rem 1.25rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            font-weight: 500;
+        }
+
+        td {
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .highlight-cell {
+            color: var(--accent-highlight);
+            font-weight: 500;
+        }
+
+        /* Visualization Images */
+        .viz-image-container {
+            margin: 3rem 0;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-card);
+        }
+
+        .viz-image-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .viz-image-caption {
+            padding: 1rem 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            font-style: italic;
+        }
+
+        /* Key Findings Box */
+        .finding-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .finding-box h4 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--accent-highlight);
+            margin-bottom: 1rem;
+        }
+
+        .finding-box p {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin-bottom: 0;
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            margin: 2rem 0;
+        }
+
+        .comparison-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .comparison-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .comparison-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: var(--text-primary);
+        }
+
+        .comparison-detail {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Final Synthesis */
+        .synthesis-section {
+            padding: 6rem 0;
+            background: var(--bg-secondary);
+        }
+
+        .synthesis-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .synthesis-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 400;
+            margin-bottom: 1rem;
+        }
+
+        .media-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 3rem 0;
+        }
+
+        .media-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .media-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .media-card.sleep::before { background: var(--gradient-sleep); }
+        .media-card.calories::before { background: var(--gradient-calories); }
+        .media-card.strain::before { background: var(--gradient-strain); }
+
+        .media-card h4 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            font-weight: 400;
+            margin-bottom: 0.5rem;
+        }
+
+        .media-card .medium {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .media-card p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 0;
+        }
+
+        /* Common Thread Section */
+        .common-thread {
+            margin-top: 4rem;
+            padding-top: 4rem;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        .thread-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .thread-title h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            margin-bottom: 0;
+        }
+
+        .extra-credit-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--accent-highlight);
+            background: rgba(6, 214, 160, 0.1);
+            padding: 0.35rem 0.75rem;
+            border-radius: 4px;
+            border: 1px solid rgba(6, 214, 160, 0.2);
+        }
+
+        .question-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .flow-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+        }
+
+        .flow-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--bg-primary);
+            background: var(--text-muted);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .flow-item.sleep .flow-number { background: var(--accent-sleep); }
+        .flow-item.calories .flow-number { background: var(--accent-calories); }
+        .flow-item.strain .flow-number { background: var(--accent-strain); }
+
+        .flow-content h4 {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .flow-content p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0;
+        }
+
+        .flow-arrow {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+        }
+
+        /* Unified Insight */
+        .unified-insight {
+            background: linear-gradient(135deg, rgba(6, 214, 160, 0.1) 0%, rgba(123, 104, 238, 0.1) 100%);
+            border: 1px solid rgba(6, 214, 160, 0.2);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-top: 3rem;
+        }
+
+        .unified-insight h4 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            font-weight: 400;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .unified-insight p {
+            color: var(--text-secondary);
+            margin-bottom: 0;
+        }
+
+        /* Footer */
+        footer {
+            padding: 4rem 0;
+            text-align: center;
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        footer p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        footer .course {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1.25rem;
+            }
+
+            .hero-meta {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .comparison-row {
+                grid-template-columns: 1fr;
+            }
+
+            .theme-card {
+                padding: 2rem;
+            }
+
+            .theme-card::before {
+                font-size: 8rem;
+                top: -1.5rem;
+            }
+        }
+
+        /* Scroll animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-label">COMP617 Module One • Dear Data Redux</div>
+        <h1>Dear Data: Sleep, Strain,<br>and <em>Caloric Analysis</em></h1>
+        <p class="hero-subtitle">A five-day exploration of physiological data through three handcrafted visualizations, investigating whether "more" always means "better" in fitness metrics.</p>
+        <div class="hero-meta">
+            <span>By Gavin Zhu</span>
+            <span>•</span>
+            <span>February 13, 2026</span>
+        </div>
+        <div class="scroll-indicator">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+        </div>
+    </section>
+
+    <!-- Central Theme -->
+    <section class="theme-section">
+        <div class="container">
+            <div class="theme-card fade-in">
+                <h2>Central Theme: Quality vs Quantity in Fitness Metrics</h2>
+                <p>This project explores a central question that emerged from my experience tracking physiological data with a WHOOP wearable: <strong>Does "more" always mean "better" when it comes to fitness metrics?</strong></p>
+                <p>Conventional wisdom suggests that more sleep leads to better recovery, more exercise burns more calories, and longer workouts build more fitness. But as someone who tracks granular data daily, I began noticing patterns that challenged these assumptions.</p>
+                <p>Each question examines a different domain—recovery, energy, and effort—but all investigate the relationship between quantity and quality. By collecting data across the same five-day period and analyzing these questions in sequence, I aimed to uncover whether the "quality vs. quantity" tension appears consistently across my body's performance metrics.</p>
+                
+                <ol class="theme-questions">
+                    <li>
+                        <span class="question-number">Q1</span>
+                        <span class="question-text"><strong>Sleep:</strong> Does sleeping longer result in proportionally more restorative sleep?</span>
+                    </li>
+                    <li>
+                        <span class="question-number">Q2</span>
+                        <span class="question-text"><strong>Energy:</strong> How does daily calorie expenditure vary between rest and training days?</span>
+                    </li>
+                    <li>
+                        <span class="question-number">Q3</span>
+                        <span class="question-text"><strong>Training Load:</strong> Which workout types contribute most to weekly strain?</span>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </section>
+
+    <!-- Visualization 1: Sleep -->
+    <section class="visualization viz-1">
+        <div class="container">
+            <div class="viz-header fade-in">
+                <div class="viz-number">Visualization 01</div>
+                <h2 class="viz-title">Sleep Stage Composition and Restorative Efficiency</h2>
+                <p class="viz-question">Does sleeping longer result in proportionally more restorative (deep + REM) sleep?</p>
+            </div>
+
+            <div class="section-label">Data Collection</div>
+            <p class="fade-in">I collected five consecutive nights of sleep data (Sunday, February 8 through Thursday, February 12, 2026) using a WHOOP 4.0 wearable device, which I wear continuously on my wrist. The WHOOP strap uses an optical heart rate sensor sampling at 100Hz and a 3-axis accelerometer to passively track sleep without requiring any manual input.</p>
+            <p class="fade-in">For my analysis, I combined deep sleep and REM sleep into a single "restorative sleep" category, as both stages are associated with physical recovery, memory consolidation, and cognitive restoration.</p>
+
+            <div class="data-table-wrapper fade-in">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Total Sleep</th>
+                            <th>Light</th>
+                            <th>Deep</th>
+                            <th>REM</th>
+                            <th>Restorative</th>
+                            <th>Restorative %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Sun 02/08</td>
+                            <td>10.5h (632m)</td>
+                            <td>351m</td>
+                            <td>132m</td>
+                            <td>149m</td>
+                            <td>281m</td>
+                            <td>44.5%</td>
+                        </tr>
+                        <tr>
+                            <td>Mon 02/09</td>
+                            <td>6.0h (361m)</td>
+                            <td>151m</td>
+                            <td>92m</td>
+                            <td>118m</td>
+                            <td>210m</td>
+                            <td class="highlight-cell">58.2%</td>
+                        </tr>
+                        <tr>
+                            <td>Tue 02/10</td>
+                            <td>7.3h (438m)</td>
+                            <td>238m</td>
+                            <td>115m</td>
+                            <td>85m</td>
+                            <td>200m</td>
+                            <td>45.7%</td>
+                        </tr>
+                        <tr>
+                            <td>Wed 02/11</td>
+                            <td>7.5h (450m)</td>
+                            <td>217m</td>
+                            <td>139m</td>
+                            <td>94m</td>
+                            <td>233m</td>
+                            <td>51.8%</td>
+                        </tr>
+                        <tr>
+                            <td>Thu 02/12</td>
+                            <td>7.9h (475m)</td>
+                            <td>298m</td>
+                            <td>105m</td>
+                            <td>72m</td>
+                            <td>177m</td>
+                            <td>37.3%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section-label">Visualization</div>
+            <div class="viz-image-container fade-in">
+                <img src="SleepBarChart.jpeg" alt="Stacked bar chart showing sleep composition across 5 days, with restorative percentages labeled">
+                <div class="viz-image-caption">Stacked bar chart created in Notability showing sleep stage composition. Purple represents restorative sleep (deep + REM), light blue represents light sleep.</div>
+            </div>
+
+            <div class="section-label">Process & Design</div>
+            <p class="fade-in">I created a stacked bar chart visualization using the Notability app on iPad with Apple Pencil, combining the tactile quality of hand-drawing with the precision of digital tools. Each bar represents one night of sleep, with total bar height proportional to total sleep duration. The darker purple shade for restorative sleep and lighter blue for light sleep creates intuitive visual mapping—deeper, more restorative sleep appears visually "deeper" in tone.</p>
+            <p class="fade-in">Drawing Sunday's 10.5-hour bar and seeing how much of it was pale blue (light sleep) compared to Monday's compact 6-hour bar with its larger proportion of dark purple (restorative sleep) made the counterintuitive finding tangible in a way that an auto-generated chart would not.</p>
+
+            <div class="section-label">Key Finding</div>
+            <div class="finding-box fade-in">
+                <h4>Counterintuitive Result</h4>
+                <p>Sleeping longer does <strong>not</strong> result in proportionally more restorative sleep. There is a moderate <strong>negative correlation (r = -0.55)</strong> between total sleep duration and restorative sleep percentage.</p>
+            </div>
+
+            <div class="comparison-row fade-in">
+                <div class="comparison-item">
+                    <div class="comparison-label">Sunday (Longest)</div>
+                    <div class="comparison-value">10.5h</div>
+                    <div class="comparison-detail">281 min restorative • 44.5%</div>
+                </div>
+                <div class="comparison-item">
+                    <div class="comparison-label">Monday (Shortest)</div>
+                    <div class="comparison-value">6.0h</div>
+                    <div class="comparison-detail">210 min restorative • <strong>58.2%</strong></div>
+                </div>
+            </div>
+
+            <p class="fade-in">Sunday had 4.5 more hours of sleep than Monday—yet only 71 of those additional 271 minutes were restorative. The remaining 200 extra minutes were light sleep. My body appears to prioritize a baseline amount of restorative sleep each night, with light sleep serving as the variable buffer.</p>
+        </div>
+    </section>
+
+    <!-- Visualization 2: Calories -->
+    <section class="visualization viz-2">
+        <div class="container">
+            <div class="viz-header fade-in">
+                <div class="viz-number">Visualization 02</div>
+                <h2 class="viz-title">Daily Energy Expenditure</h2>
+                <p class="viz-question">How does my daily energy expenditure vary between rest days and training days?</p>
+            </div>
+
+            <div class="section-label">Data Collection</div>
+            <p class="fade-in">I collected five consecutive days of energy expenditure data using the WHOOP 4.0 wearable. WHOOP calculates total daily calories burned by combining basal metabolic rate with active calories derived from heart rate data throughout the day.</p>
+
+            <div class="data-table-wrapper fade-in">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Total Calories</th>
+                            <th>Strain</th>
+                            <th>Workout Activity</th>
+                            <th>Workout Cal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Sun 02/08</td>
+                            <td>1,672</td>
+                            <td>4.6</td>
+                            <td><em>None (Rest Day)</em></td>
+                            <td>0</td>
+                        </tr>
+                        <tr>
+                            <td>Mon 02/09</td>
+                            <td>2,192</td>
+                            <td>13.1</td>
+                            <td>Cycling (38 min)</td>
+                            <td>467</td>
+                        </tr>
+                        <tr>
+                            <td>Tue 02/10</td>
+                            <td>2,606</td>
+                            <td>17.6</td>
+                            <td>Pickleball (47 min), Weightlifting (77 min)</td>
+                            <td>820</td>
+                        </tr>
+                        <tr>
+                            <td>Wed 02/11</td>
+                            <td class="highlight-cell">2,633</td>
+                            <td>16.6</td>
+                            <td>Running (58 min)</td>
+                            <td>781</td>
+                        </tr>
+                        <tr>
+                            <td>Thu 02/12</td>
+                            <td>2,577</td>
+                            <td>15.6</td>
+                            <td>Weightlifting (84 min)</td>
+                            <td>412</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section-label">Visualization</div>
+            <div class="viz-image-container fade-in">
+                <img src="CaloriesRice.jpeg" alt="Five piles of rice representing daily calorie expenditure, with Sunday's pile noticeably smaller">
+                <div class="viz-image-caption">Physical visualization using uncooked white rice. Scale: 1 tablespoon = 100 calories. Each pile is labeled with day, calorie count, and tablespoon measurement.</div>
+            </div>
+
+            <div class="section-label">Process & Design</div>
+            <p class="fade-in">I created a physical visualization using uncooked white rice, with each day's calorie expenditure represented by a proportional pile. I used a scale of 1 tablespoon of rice = 100 calories, making the measurements practical with standard kitchen tools while maintaining accurate proportions between days.</p>
+            <p class="fade-in">I chose rice as the physical medium because it creates an intuitive, tangible connection to energy—rice is itself a source of calories, making it a fitting material to represent energy expenditure. Physically measuring and pouring 17 tablespoons for Sunday versus 26 tablespoons for Wednesday made the difference visceral in a way that numbers on a screen cannot.</p>
+
+            <div class="section-label">Key Finding</div>
+            <div class="stats-grid fade-in">
+                <div class="stat-card">
+                    <div class="stat-value">1,672</div>
+                    <div class="stat-label">Rest Day Calories</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">2,633</div>
+                    <div class="stat-label">Peak Training Day</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">57%</div>
+                    <div class="stat-label">Increase on Training Days</div>
+                </div>
+            </div>
+
+            <p class="fade-in">The Tuesday-Wednesday-Thursday piles are nearly identical in size, suggesting that once I engage in meaningful exercise, the type matters less than whether I trained at all. The binary of "rest day vs. training day" appears to be a more significant factor in daily calorie expenditure than the specific workout type or duration.</p>
+        </div>
+    </section>
+
+    <!-- Visualization 3: Strain -->
+    <section class="visualization viz-3">
+        <div class="container">
+            <div class="viz-header fade-in">
+                <div class="viz-number">Visualization 03</div>
+                <h2 class="viz-title">Weekly Training Load by Activity Type</h2>
+                <p class="viz-question">Which workout types contribute most to my weekly training load?</p>
+            </div>
+
+            <div class="section-label">Data Collection</div>
+            <p class="fade-in">I collected five days of workout data using the WHOOP 4.0 wearable. WHOOP calculates a "strain" score for each workout on a 0-21 scale, derived from cardiovascular load based on heart rate data—specifically, time spent in different heart rate zones and overall cardiac effort during the activity.</p>
+
+            <div class="data-table-wrapper fade-in">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Activity</th>
+                            <th>Total Strain</th>
+                            <th>% of Total</th>
+                            <th>Sessions</th>
+                            <th>Total Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Weightlifting</strong></td>
+                            <td class="highlight-cell">31.1</td>
+                            <td class="highlight-cell">45%</td>
+                            <td>2</td>
+                            <td>161 min</td>
+                        </tr>
+                        <tr>
+                            <td>Running</td>
+                            <td>16.1</td>
+                            <td>24%</td>
+                            <td>1</td>
+                            <td>58 min</td>
+                        </tr>
+                        <tr>
+                            <td>Cycling</td>
+                            <td>12.7</td>
+                            <td>19%</td>
+                            <td>1</td>
+                            <td>38 min</td>
+                        </tr>
+                        <tr>
+                            <td>Pickleball</td>
+                            <td>8.5</td>
+                            <td>12%</td>
+                            <td>1</td>
+                            <td>47 min</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total</strong></td>
+                            <td><strong>68.4</strong></td>
+                            <td><strong>100%</strong></td>
+                            <td><strong>5</strong></td>
+                            <td><strong>304 min</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section-label">Visualization</div>
+            <div class="viz-image-container fade-in">
+                <img src="ActivityVisualization.jpeg" alt="Abstract wave visualization showing strain distribution by activity type">
+                <div class="viz-image-caption">AI-generated visualization (Microsoft Bing Image Creator / DALL-E 3) with hand-added labels in Notability. Wave thickness represents proportional contribution to total strain.</div>
+            </div>
+
+            <div class="section-label">Process & Design</div>
+            <p class="fade-in">I created this visualization using a hybrid approach: AI-generated artwork with manually added data labels. I used Microsoft Bing Image Creator (powered by DALL-E 3) to generate an abstract visualization, then added scientific labels in Notability.</p>
+            <p class="fade-in">Each activity is represented by a flowing wave, with wave thickness proportional to that activity's contribution to total weekly strain. The flowing, dynamic wave forms evoke movement, heart rate patterns, and the continuous nature of cardiovascular strain during exercise.</p>
+
+            <div class="section-label">Key Finding</div>
+            <div class="finding-box fade-in">
+                <h4>Volume vs Efficiency</h4>
+                <p><strong>Weightlifting dominates</strong> my weekly training load (45%) due to high volume (161 min), but <strong>Running is most efficient</strong> at 0.28 strain/minute—meaning a 58-minute run delivered nearly as much training stimulus as an 84-minute lifting session.</p>
+            </div>
+
+            <div class="data-table-wrapper fade-in">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Activity</th>
+                            <th>Strain per Minute</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Cycling</td><td class="highlight-cell">0.33</td></tr>
+                        <tr><td>Running</td><td>0.28</td></tr>
+                        <tr><td>Weightlifting</td><td>0.19</td></tr>
+                        <tr><td>Pickleball</td><td>0.18</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final Synthesis -->
+    <section class="synthesis-section">
+        <div class="container">
+            <div class="synthesis-header fade-in">
+                <div class="viz-number">Synthesis</div>
+                <h2>Comparing Media, Process, and Insights</h2>
+            </div>
+
+            <p class="fade-in">Creating three visualizations using different media—digital hand-drawing in Notability, physical rice piles, and AI-generated artwork—revealed how profoundly the crafting process shapes one's relationship with data.</p>
+
+            <div class="media-comparison fade-in">
+                <div class="media-card sleep">
+                    <h4>Sleep Visualization</h4>
+                    <div class="medium">Digital Hand-Drawing (Notability)</div>
+                    <p>The digital sketching process required me to manually calculate and draw each stacked bar. This forced intimacy with the numbers made the counterintuitive finding visceral: I physically drew Sunday's bar nearly twice as tall, yet had to fill most of it with light blue.</p>
+                </div>
+                <div class="media-card calories">
+                    <h4>Calorie Visualization</h4>
+                    <div class="medium">Physical Medium (Rice Piles)</div>
+                    <p>The physical medium created the most memorable crafting experience. Measuring 17 tablespoons for Sunday versus 26 for Wednesday made the calorie difference tactile—I could feel the weight difference between rest and training days.</p>
+                </div>
+                <div class="media-card strain">
+                    <h4>Strain Visualization</h4>
+                    <div class="medium">AI-Generated + Manual Labels</div>
+                    <p>This hybrid approach offered the most striking visual result. The AI created flowing waves that evoke energy and movement far better than I could draw freehand. The tradeoff was less intimacy with the data during creation.</p>
+                </div>
+            </div>
+
+            <h3 class="fade-in">Effectiveness and Engagement</h3>
+            <p class="fade-in"><strong>Most analytically clear:</strong> Visualization 1 (Sleep). The stacked bar format makes proportional comparisons immediate and precise.</p>
+            <p class="fade-in"><strong>Most viscerally engaging:</strong> Visualization 2 (Rice). There's something compelling about data you can touch.</p>
+            <p class="fade-in"><strong>Most aesthetically striking:</strong> Visualization 3 (Strain). The flowing waves create an emotional response—they look like energy, like heartbeats, like effort.</p>
+
+            <!-- Common Thread Section -->
+            <div class="common-thread fade-in">
+                <div class="thread-title">
+                    <h3>Common Thread: How the Questions Build on One Another</h3>
+                    <span class="extra-credit-badge">Extra Credit</span>
+                </div>
+
+                <p>The three questions were designed to sequentially probe the theme of <strong>quality vs. quantity in fitness metrics</strong>, with each finding informing the next:</p>
+
+                <div class="question-flow">
+                    <div class="flow-item sleep">
+                        <div class="flow-number">Q1</div>
+                        <div class="flow-content">
+                            <h4>Sleep established the foundational insight</h4>
+                            <p>Sleeping longer does not result in proportionally more restorative sleep. This revealed that efficiency and composition matter more than raw duration—a finding that challenged my assumption that "more is better."</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">↓</div>
+                    <div class="flow-item calories">
+                        <div class="flow-number">Q2</div>
+                        <div class="flow-content">
+                            <h4>Calories tested whether this principle extends to energy</h4>
+                            <p>Training days burn significantly more calories than rest days, but the majority of daily burn comes from baseline metabolism regardless of activity. The foundation remains stable, while the "extra" is more variable.</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">↓</div>
+                    <div class="flow-item strain">
+                        <div class="flow-number">Q3</div>
+                        <div class="flow-content">
+                            <h4>Strain deepened the analysis within training itself</h4>
+                            <p>While Weightlifting dominated total weekly strain (45%) due to volume, Running was most efficient at 0.28 strain/minute. Just as 6 hours of efficient sleep ≈ 10.5 hours, 58 minutes of running ≈ 84 minutes of lifting.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="unified-insight">
+                    <h4>The Unified Insight</h4>
+                    <p>Whether examining sleep, energy, or training load, my data consistently reveals that <strong>quality and efficiency matter as much as—or more than—raw quantity</strong>. More hours of sleep, more calories burned, and more minutes of exercise do not automatically translate to proportionally better outcomes.</p>
+                    <p style="margin-top: 1rem;">This finding has practical implications: rather than maximizing volume, I should optimize for efficiency and composition—prioritizing restorative sleep stages, strategic training days, and high-efficiency workouts when time is limited.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p class="course">COMP617 • Module One: Dear Data Redux</p>
+            <p>Gavin Zhu • February 13, 2026</p>
+        </div>
+    </footer>
+
+    <script>
+        // Scroll-triggered fade-in animations
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+
+</body>
+</html>
